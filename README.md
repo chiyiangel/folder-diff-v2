@@ -61,10 +61,6 @@ Example:
 folder-diff /path/to/folder1 /path/to/folder2 --mode=hash --exclude=*.tmp
 ```
 
-## Report Example
-
-![Folder Comparison](./docs/file-folder-comparison.jpg)
-
 ## Contributing
 
 We welcome issues and pull requests. Please ensure consistent code style and pass all tests.
