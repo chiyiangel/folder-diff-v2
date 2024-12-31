@@ -59,6 +59,21 @@ const htmlTemplate = `<!DOCTYPE html>
         .tree li { margin: 5px 0; }
         .icon { margin-right: 5px; width: 16px; }
         .collapsed ul { display: none; }
+        .file-status { margin-left: 5px; }
+        .file-details { 
+            max-width: 80%; 
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .file-diff {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -94,13 +109,18 @@ const htmlTemplate = `<!DOCTYPE html>
             li.classList.toggle('collapsed');
         }
 
-        function showFileDetails(path, status, hash) {
+        function showFileDetails(path, status, hash, diff) {
             const details = document.getElementById('fileDetails');
             const content = document.getElementById('fileContent');
-            content.innerHTML = 
-                '<p><strong>Path:</strong> ' + path + '</p>' +
-                '<p><strong>Status:</strong> <span class="' + status + '">' + status + '</span></p>' +
-                (hash ? '<p><strong>Hash:</strong> ' + hash + '</p>' : '');
+            let html = '<p><strong>Path:</strong> ' + path + '</p>' +
+                      '<p><strong>Status:</strong> <span class="' + status + '">' + status + '</span></p>' +
+                      (hash ? '<p><strong>Hash:</strong> ' + hash + '</p>' : '');
+            
+            if (diff) {
+                html += '<div class="file-diff">' + diff + '</div>';
+            }
+            
+            content.innerHTML = html;
             details.style.display = 'block';
         }
 
@@ -124,13 +144,15 @@ const htmlTemplate = `<!DOCTYPE html>
         {{if .IsDir}}
             <span onclick="toggleFolder(this)">
                 <i class="fas fa-folder icon"></i>{{.RelPath}}
+                {{if and (not .IsDir) (ne .Status "identical")}}<i class="fas fa-exclamation-circle file-status modified"></i>{{end}}
             </span>
             <ul>
                 {{template "fileTree" .Children}}
             </ul>
         {{else}}
-            <span class="{{.Status}}" onclick="showFileDetails('{{.RelPath}}', '{{.Status}}', '{{.Hash}}')">
+            <span class="{{.Status}}" onclick="showFileDetails('{{.RelPath}}', '{{.Status}}', '{{.Hash}}', '')">
                 <i class="fas fa-file icon"></i>{{.RelPath}}
+                <i class="fas fa-info-circle file-status"></i>
             </span>
         {{end}}
     </li>
