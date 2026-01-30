@@ -1,7 +1,10 @@
 # folder-diff
 
+[![CI](https://github.com/chiyiangel/folder-diff-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/chiyiangel/folder-diff-v2/actions/workflows/ci.yml)
+[![Release](https://github.com/chiyiangel/folder-diff-v2/actions/workflows/release.yml/badge.svg)](https://github.com/chiyiangel/folder-diff-v2/actions/workflows/release.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chiyiangel/folder-diff-v2)](https://goreportcard.com/report/github.com/chiyiangel/folder-diff-v2)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Latest Release](https://img.shields.io/github/v/release/chiyiangel/folder-diff-v2)](https://github.com/chiyiangel/folder-diff-v2/releases/latest)
 
 A Terminal User Interface (TUI) tool for comparing file differences between two folders with **synchronized dual-pane navigation**. Built with Go and [tview](https://github.com/rivo/tview).
 
