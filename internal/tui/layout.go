@@ -134,19 +134,15 @@ func (l *Layout) renderNode(node *SyncNode, indent, prefix string, isSource, sel
 		file = node.TargetFile
 	}
 
-	// Determine icon
-	if node.IsDir {
-		if node.Expanded {
-			icon = "📂"
-		} else {
-			icon = "📁"
-		}
-	} else {
-		icon = "📄"
-	}
-
-	// Handle non-existent files
+	// Handle non-existent files first
 	if file == nil {
+		// Use different icon for non-existent files
+		if node.IsDir {
+			icon = "⊘"  // Empty set symbol for missing directory
+		} else {
+			icon = "∅"  // Empty set for missing file
+		}
+		
 		text = "[Not exists]"
 		if isSource && node.Status == compare.New {
 			color = "gray"
@@ -163,6 +159,17 @@ func (l *Layout) renderNode(node *SyncNode, indent, prefix string, isSource, sel
 			return fmt.Sprintf("%s%s[black:white]%s %s%s[-:-]", prefix, indent, icon, text, statusIcon)
 		}
 		return fmt.Sprintf("%s%s[%s]%s %s%s[-]", prefix, indent, color, icon, text, statusIcon)
+	}
+
+	// Determine icon for existing files
+	if node.IsDir {
+		if node.Expanded {
+			icon = "📂"
+		} else {
+			icon = "📁"
+		}
+	} else {
+		icon = "📄"
 	}
 
 	// Set status icon and color
