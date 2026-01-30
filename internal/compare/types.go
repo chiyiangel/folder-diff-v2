@@ -26,6 +26,9 @@ type FileInfo struct {
 	Status   FileStatus
 	IsDir    bool
 	Children []*FileInfo
+	Parent   *FileInfo // Added for tree navigation in TUI
+	Name     string    // Base name for display
+	Expanded bool      // Track expand/collapse state in TUI
 }
 
 // ComparisonResult contains the complete comparison results
@@ -34,6 +37,8 @@ type ComparisonResult struct {
 	TargetRoot     string
 	SourceFiles    []*FileInfo
 	TargetFiles    []*FileInfo
+	SourceTree     *FileInfo // Tree structure for TUI
+	TargetTree     *FileInfo // Tree structure for TUI
 	Mode           ComparisonMode
 	ExcludePattern []string
 }

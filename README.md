@@ -1,69 +1,149 @@
 # folder-diff
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/chiyiangel/folder-diff)](https://goreportcard.com/report/github.com/chiyiangel/folder-diff)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chiyiangel/folder-diff-v2)](https://goreportcard.com/report/github.com/chiyiangel/folder-diff-v2)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-folder-diff is a command-line tool written in Go for comparing all file differences between two folders. It supports both hash-based and filename-based comparison, and generates a visual HTML report.
+A Terminal User Interface (TUI) tool for comparing file differences between two folders with **synchronized dual-pane navigation**. Built with Go and [tview](https://github.com/rivo/tview).
 
 ## Features
 
-- **File Comparison**: Recursively compare all files in two folders, including subdirectories
-- **Multiple Comparison Modes**:
-  - Hash-based: Use cryptographic hash functions (e.g., MD5, SHA256) to compare file contents
-  - Filename-based: Compare files based on names only, faster execution
-- **HTML Report**:
-  - Visualize folder structure using file trees
-  - Color-coded differences:
-    - Green: Identical files
-    - Red: Modified files
-    - Blue: New files
-    - Gray: Deleted files
-  - Interactive features: Expand/collapse folders, click files for detailed information
-- **Command-line Interface**:
-  - Multiple options and flags
-  - Exclude specific files or directories
-  - Verbose output mode
+- **Synchronized Navigation**: Both panels move together - always showing the same path for easy comparison
+- **Interactive TUI**: Dual-pane layout showing source and target directories side by side
+- **Tree View**: Hierarchical display of folder structures with expand/collapse support
+- **Smart Placeholders**: Shows `[Not exists]` for files that only exist in one directory
+- **Color-Coded Status**:
+  - 🟢 Green (✓) - Identical files
+  - 🔴 Red (~) - Modified files
+  - 🔵 Blue (+) - New files (target only)
+  - ⚫ Gray (-) - Deleted files (source only)
+- **Comparison Modes**:
+  - `hash`: Compare file contents using SHA256 (default)
+  - `filename`: Compare by filename only (faster)
+- **Pattern Exclusion**: Skip files/directories matching specified patterns
+- **Keyboard Navigation**: Full keyboard support for efficient browsing
 
 ## Installation
-
-### Using Go
-
-```bash
-go install github.com/chiyiangel/folder-diff@latest
-```
 
 ### From Source
 
 ```bash
-git clone https://github.com/chiyiangel/folder-diff.git
-cd folder-diff
-make build
+git clone https://github.com/chiyiangel/folder-diff-v2.git
+cd folder-diff-v2
+go build -o folder-diff ./cmd/folder-diff/
+```
+
+### Using Go Install
+
+```bash
+go install github.com/chiyiangel/folder-diff-v2/cmd/folder-diff@latest
 ```
 
 ## Usage
 
-Basic usage:
-
 ```bash
-folder-diff /path/to/folder1 /path/to/folder2
+folder-diff [options] <source_dir> <target_dir>
 ```
 
-Options:
+### Options
 
-- `--mode=hash`: Use hash-based comparison (default)
-- `--mode=filename`: Use filename-based comparison
-- `--exclude`: Exclude specific files or directories
-- `--verbose`: Show verbose output
+| Option | Description |
+|--------|-------------|
+| `--mode=hash` | Compare by file content hash (default) |
+| `--mode=filename` | Compare by filename only |
+| `--exclude=PATTERNS` | Comma-separated patterns to exclude |
+| `--verbose` | Show verbose output during scanning |
 
-Example:
+### Examples
 
 ```bash
-folder-diff /path/to/folder1 /path/to/folder2 --mode=hash --exclude=*.tmp
+# Basic comparison
+folder-diff /path/to/source /path/to/target
+
+# Filename-only comparison (faster)
+folder-diff --mode=filename /path/to/source /path/to/target
+
+# Exclude certain files
+folder-diff --exclude=*.tmp,*.log,node_modules /path/to/source /path/to/target
+
+# Verbose mode
+folder-diff --verbose /path/to/source /path/to/target
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Move up (both panels) |
+| `↓` / `j` | Move down (both panels) |
+| `Space` / `Enter` | Expand/collapse folder |
+| `d` | Jump to next difference |
+| `h` / `?` | Show help |
+| `q` / `Esc` | Quit application |
+
+## Screenshot
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                📁 Folder Diff - Synchronized View                │
+├────────────────────────────┬────────────────────────────────────┤
+│ Source: /path/to/source    │ Target: /path/to/target            │
+├────────────────────────────┼────────────────────────────────────┤
+│ > 📄 file1.txt          ✓  │ > 📄 file1.txt                  ✓  │
+│   📄 file2.txt          ~  │   📄 file2.txt                  ~  │
+│   📄 file3.txt          -  │   [Not exists]                  -  │
+│   [Not exists]          +  │   📄 file4.txt                  +  │
+│   📁 subdir/            ✓  │   📁 subdir/                    ✓  │
+│     📄 sub1.txt         ✓  │     📄 sub1.txt                 ✓  │
+│     📄 sub2.txt         -  │     [Not exists]                -  │
+├────────────────────────────┴────────────────────────────────────┤
+│ ↑↓ Navigate  Space Expand  d Next Diff  h Help  q Quit          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Note**: The `>` indicates current selection. Both panels are synchronized - 
+navigation affects both sides simultaneously, making it easy to spot differences.
+
+## How It Works
+
+### Synchronized Navigation
+Unlike traditional file comparison tools with independent panel navigation, `folder-diff` 
+synchronizes both panels:
+
+1. **Unified Path**: Both panels always show the same relative path
+2. **Smart Placeholders**: Missing files show as `[Not exists]` instead of gaps
+3. **Consistent View**: Expand/collapse affects both sides together
+4. **Easy Comparison**: Files at the same position can be directly compared
+
+### Comparison Logic
+
+- **Hash Mode** (default): Calculates SHA256 hash for each file to detect content changes
+- **Filename Mode**: Only compares filenames and paths (faster for large directories)
+
+## Project Structure
+
+```
+folder-diff-v2/
+├── cmd/folder-diff/
+│   └── main.go           # Application entry point
+├── internal/
+│   ├── compare/
+│   │   ├── types.go      # Data structures
+│   │   └── comparator.go # Comparison logic
+│   ├── scanner/
+│   │   └── scanner.go    # Directory scanning
+│   └── tui/
+│       ├── app.go        # TUI application controller
+│       ├── layout.go     # Synchronized UI layout
+│       └── sync.go       # Synchronized tree building
+├── go.mod
+├── go.sum
+├── Makefile
+└── README.md
 ```
 
 ## Contributing
 
-We welcome issues and pull requests. Please ensure consistent code style and pass all tests.
+Issues and pull requests are welcome. Please ensure code style consistency and pass all tests.
 
 ## License
 
