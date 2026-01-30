@@ -9,9 +9,9 @@ import (
 
 // App represents the TUI application
 type App struct {
-	app      *tview.Application
-	layout   *Layout
-	result   *compare.ComparisonResult
+	app       *tview.Application
+	layout    *Layout
+	result    *compare.ComparisonResult
 	sourceDir string
 	targetDir string
 }
@@ -32,7 +32,7 @@ func (a *App) Run() error {
 	sourceTree := BuildTree(a.result.SourceFiles, a.sourceDir)
 	targetTree := BuildTree(a.result.TargetFiles, a.targetDir)
 
-	// Create layout with both trees
+	// Create synchronized layout
 	a.layout = NewLayout(a.app, sourceTree, targetTree, a.sourceDir, a.targetDir)
 
 	// Set up global key bindings
@@ -41,14 +41,17 @@ func (a *App) Run() error {
 		case tcell.KeyEsc:
 			a.app.Stop()
 			return nil
-		case tcell.KeyTab:
-			a.layout.SwitchFocus()
+		case tcell.KeyUp:
+			a.layout.MoveUp()
 			return nil
-		case tcell.KeyLeft:
-			a.layout.FocusLeft()
+		case tcell.KeyDown:
+			a.layout.MoveDown()
 			return nil
-		case tcell.KeyRight:
-			a.layout.FocusRight()
+		case tcell.KeyEnter:
+			a.layout.ToggleExpand()
+			return nil
+		case tcell.KeyCtrlC:
+			a.app.Stop()
 			return nil
 		}
 
@@ -58,6 +61,18 @@ func (a *App) Run() error {
 			return nil
 		case 'h', '?':
 			a.layout.ShowHelp()
+			return nil
+		case ' ':
+			a.layout.ToggleExpand()
+			return nil
+		case 'd', 'D':
+			a.layout.JumpToNextDiff()
+			return nil
+		case 'k':
+			a.layout.MoveUp()
+			return nil
+		case 'j':
+			a.layout.MoveDown()
 			return nil
 		}
 
