@@ -12,11 +12,29 @@ import (
 	"folder-diff-v2/internal/tui"
 )
 
+// Version information (set by ldflags during build)
+var (
+	Version   = "dev"
+	Commit    = "unknown"
+	BuildTime = "unknown"
+	GoVersion = "unknown"
+)
+
 func main() {
 	mode := flag.String("mode", "hash", "Comparison mode: hash or filename")
 	exclude := flag.String("exclude", "", "Comma-separated list of patterns to exclude")
 	verbose := flag.Bool("verbose", false, "Enable verbose output")
+	version := flag.Bool("version", false, "Show version information")
 	flag.Parse()
+
+	// Show version if requested
+	if *version {
+		fmt.Printf("folder-diff %s\n", Version)
+		fmt.Printf("Commit:     %s\n", Commit)
+		fmt.Printf("Build Time: %s\n", BuildTime)
+		fmt.Printf("Go Version: %s\n", GoVersion)
+		os.Exit(0)
+	}
 
 	if flag.NArg() != 2 {
 		fmt.Println("Usage: folder-diff [options] <source_dir> <target_dir>")
@@ -48,6 +66,7 @@ func main() {
 	}
 
 	if *verbose {
+		fmt.Printf("folder-diff %s\n", Version)
 		fmt.Printf("Scanning directories...\n")
 		fmt.Printf("Source: %s\n", sourceDir)
 		fmt.Printf("Target: %s\n", targetDir)
