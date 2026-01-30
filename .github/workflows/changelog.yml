@@ -1,0 +1,118 @@
+name: Update CHANGELOG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    name: Update CHANGELOG
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="Unreleased"
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
+
+    - name: Generate CHANGELOG
+      run: |
+        # Initialize CHANGELOG if it doesn't exist
+        if [ ! -f CHANGELOG.md ]; then
+          cat > CHANGELOG.md << 'EOF'
+        # Changelog
+
+        All notable changes to this project will be documented in this file.
+
+        The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+        and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+        EOF
+        fi
+
+        # Create temporary file
+        TEMP_FILE=$(mktemp)
+        
+        # Get list of tags sorted by date
+        TAGS=$(git tag --sort=-creatordate)
+        
+        # Write header
+        cat > "$TEMP_FILE" << 'EOF'
+        # Changelog
+
+        All notable changes to this project will be documented in this file.
+
+        The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+        and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+        EOF
+
+        # Process each tag
+        PREV_TAG=""
+        for TAG in $TAGS; do
+          echo "" >> "$TEMP_FILE"
+          echo "## [$TAG] - $(git log -1 --format=%ai $TAG | cut -d' ' -f1)" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          
+          # Get commits between tags
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log $TAG --pretty=format:"- %s" --no-merges | head -50)
+          else
+            COMMITS=$(git log ${PREV_TAG}..${TAG} --pretty=format:"- %s" --no-merges)
+          fi
+          
+          # Categorize commits
+          echo "### Added" >> "$TEMP_FILE"
+          echo "$COMMITS" | grep -iE "^- (feat|add)" || echo "- No additions" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          
+          echo "### Changed" >> "$TEMP_FILE"
+          echo "$COMMITS" | grep -iE "^- (change|update|refactor)" || echo "- No changes" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          
+          echo "### Fixed" >> "$TEMP_FILE"
+          echo "$COMMITS" | grep -iE "^- (fix|bug)" || echo "- No fixes" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          
+          echo "### Removed" >> "$TEMP_FILE"
+          echo "$COMMITS" | grep -iE "^- (remove|delete)" || echo ""
+          
+          PREV_TAG=$TAG
+        done
+
+        # Move temp file to CHANGELOG.md
+        mv "$TEMP_FILE" CHANGELOG.md
+        
+        echo "CHANGELOG.md generated successfully"
+        cat CHANGELOG.md
+
+    - name: Commit CHANGELOG
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        if git diff --quiet CHANGELOG.md; then
+          echo "No changes to CHANGELOG.md"
+        else
+          git add CHANGELOG.md
+          git commit -m "docs: Update CHANGELOG for ${{ steps.version.outputs.version }}"
+          git push
+          echo "CHANGELOG.md updated and pushed"
+        fi

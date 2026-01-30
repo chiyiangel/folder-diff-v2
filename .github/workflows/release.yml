@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: Get version
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
+
+    - name: Build all platforms
+      run: |
+        VERSION=${{ steps.version.outputs.version }} make build-all
+
+    - name: Create checksums
+      run: |
+        cd dist
+        sha256sum folder-diff_* > checksums.txt
+        cat checksums.txt
+
+    - name: Create release archives
+      run: |
+        cd dist
+        for file in folder-diff_*; do
+          if [[ "$file" == *.exe ]]; then
+            # Windows binary
+            base=${file%.exe}
+            zip "${base}.zip" "$file" ../README.md ../LICENSE
+            echo "Created ${base}.zip"
+          else
+            # Unix binary
+            tar -czf "${file}.tar.gz" "$file" ../README.md ../LICENSE
+            echo "Created ${file}.tar.gz"
+          fi
+        done
+        ls -lh
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        # Generate changelog
+        if [ -n "$PREV_TAG" ]; then
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%an)" --no-merges >> release_notes.md
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+        else
+          echo "## Initial Release" > release_notes.md
+          echo "" >> release_notes.md
+        fi
+        
+        # Add installation instructions
+        cat >> release_notes.md << 'EOF'
+        ## Installation
+
+        ### Download Binary
+        Download the appropriate binary for your platform below.
+
+        ### Using Homebrew (macOS/Linux)
+        ```bash
+        # Coming soon
+        ```
+
+        ### Using Go Install
+        ```bash
+        go install github.com/chiyiangel/folder-diff-v2/cmd/folder-diff@${{ steps.version.outputs.version }}
+        ```
+
+        ### From Source
+        ```bash
+        git clone https://github.com/chiyiangel/folder-diff-v2.git
+        cd folder-diff-v2
+        git checkout ${{ steps.version.outputs.version }}
+        make build
+        ```
+
+        ## Checksums
+        SHA256 checksums are provided in `checksums.txt`.
+
+        ## Supported Platforms
+        - Linux (amd64, arm64, 386, arm)
+        - macOS (amd64, arm64)
+        - Windows (amd64, 386)
+        EOF
+        
+        cat release_notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ steps.version.outputs.version }}
+        body_path: release_notes.md
+        files: |
+          dist/*.tar.gz
+          dist/*.zip
+          dist/checksums.txt
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.version, 'rc') || contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload artifacts for debugging
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-${{ steps.version.outputs.version }}
+        path: |
+          dist/*.tar.gz
+          dist/*.zip
+          dist/checksums.txt
+        retention-days: 30
