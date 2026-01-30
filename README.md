@@ -3,12 +3,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/chiyiangel/folder-diff-v2)](https://goreportcard.com/report/github.com/chiyiangel/folder-diff-v2)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A Terminal User Interface (TUI) tool for comparing file differences between two folders. Built with Go and [tview](https://github.com/rivo/tview).
+A Terminal User Interface (TUI) tool for comparing file differences between two folders with **synchronized dual-pane navigation**. Built with Go and [tview](https://github.com/rivo/tview).
 
 ## Features
 
+- **Synchronized Navigation**: Both panels move together - always showing the same path for easy comparison
 - **Interactive TUI**: Dual-pane layout showing source and target directories side by side
 - **Tree View**: Hierarchical display of folder structures with expand/collapse support
+- **Smart Placeholders**: Shows `[Not exists]` for files that only exist in one directory
 - **Color-Coded Status**:
   - 🟢 Green (✓) - Identical files
   - 🔴 Red (~) - Modified files
@@ -71,9 +73,8 @@ folder-diff --verbose /path/to/source /path/to/target
 
 | Key | Action |
 |-----|--------|
-| `↑` / `↓` | Navigate up/down in tree |
-| `←` / `→` | Switch between source/target panels |
-| `Tab` | Toggle panel focus |
+| `↑` / `k` | Move up (both panels) |
+| `↓` / `j` | Move down (both panels) |
 | `Space` / `Enter` | Expand/collapse folder |
 | `d` | Jump to next difference |
 | `h` / `?` | Show help |
@@ -83,20 +84,40 @@ folder-diff --verbose /path/to/source /path/to/target
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    📁 Folder Diff - TUI Mode                    │
+│                📁 Folder Diff - Synchronized View                │
 ├────────────────────────────┬────────────────────────────────────┤
 │ Source: /path/to/source    │ Target: /path/to/target            │
 ├────────────────────────────┼────────────────────────────────────┤
-│ 📁 folder1/             ✓  │ 📁 folder1/                     ✓  │
-│   📄 file1.txt          ✓  │   📄 file1.txt                  ✓  │
+│ > 📄 file1.txt          ✓  │ > 📄 file1.txt                  ✓  │
 │   📄 file2.txt          ~  │   📄 file2.txt                  ~  │
-│   📄 file3.txt          -  │                                    │
-│ 📁 folder2/             +  │ 📁 folder2/                     +  │
-│                            │   📄 newfile.txt                +  │
+│   📄 file3.txt          -  │   [Not exists]                  -  │
+│   [Not exists]          +  │   📄 file4.txt                  +  │
+│   📁 subdir/            ✓  │   📁 subdir/                    ✓  │
+│     📄 sub1.txt         ✓  │     📄 sub1.txt                 ✓  │
+│     📄 sub2.txt         -  │     [Not exists]                -  │
 ├────────────────────────────┴────────────────────────────────────┤
-│ ↑↓ Navigate  ←→ Switch  Space Expand  d Next Diff  q Quit      │
+│ ↑↓ Navigate  Space Expand  d Next Diff  h Help  q Quit          │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Note**: The `>` indicates current selection. Both panels are synchronized - 
+navigation affects both sides simultaneously, making it easy to spot differences.
+
+## How It Works
+
+### Synchronized Navigation
+Unlike traditional file comparison tools with independent panel navigation, `folder-diff` 
+synchronizes both panels:
+
+1. **Unified Path**: Both panels always show the same relative path
+2. **Smart Placeholders**: Missing files show as `[Not exists]` instead of gaps
+3. **Consistent View**: Expand/collapse affects both sides together
+4. **Easy Comparison**: Files at the same position can be directly compared
+
+### Comparison Logic
+
+- **Hash Mode** (default): Calculates SHA256 hash for each file to detect content changes
+- **Filename Mode**: Only compares filenames and paths (faster for large directories)
 
 ## Project Structure
 
@@ -112,9 +133,8 @@ folder-diff-v2/
 │   │   └── scanner.go    # Directory scanning
 │   └── tui/
 │       ├── app.go        # TUI application controller
-│       ├── layout.go     # UI layout management
-│       ├── tree.go       # Tree view component
-│       └── keybinds.go   # Keyboard handling
+│       ├── layout.go     # Synchronized UI layout
+│       └── sync.go       # Synchronized tree building
 ├── go.mod
 ├── go.sum
 ├── Makefile
