@@ -158,7 +158,11 @@ func (l *Layout) renderNode(node *SyncNode, indent, prefix string, isSource, sel
 			color = "gray"
 			statusIcon = ""
 		}
-		return fmt.Sprintf("%s%s [%s]%s %s%s[-]", prefix, indent, color, icon, text, statusIcon)
+		
+		if selected {
+			return fmt.Sprintf("%s%s[black:white]%s %s%s[-:-]", prefix, indent, icon, text, statusIcon)
+		}
+		return fmt.Sprintf("%s%s[%s]%s %s%s[-]", prefix, indent, color, icon, text, statusIcon)
 	}
 
 	// Set status icon and color
@@ -179,10 +183,10 @@ func (l *Layout) renderNode(node *SyncNode, indent, prefix string, isSource, sel
 
 	// Highlight if selected
 	if selected {
-		return fmt.Sprintf("%s%s[:black:white]%s %s%s[-::-]", prefix, indent, icon, node.Name, statusIcon)
+		return fmt.Sprintf("%s%s[black:white]%s %s%s[-:-]", prefix, indent, icon, node.Name, statusIcon)
 	}
 
-	return fmt.Sprintf("%s%s [%s]%s %s%s[-]", prefix, indent, color, icon, node.Name, statusIcon)
+	return fmt.Sprintf("%s%s[%s]%s %s%s[-]", prefix, indent, color, icon, node.Name, statusIcon)
 }
 
 // getLevel calculates the depth level of a node
